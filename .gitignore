@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+.venv-airflow/
+venv/
+
+# Python test/cache files
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment files
+.env
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
