@@ -125,6 +125,15 @@ def commit_files(commit_message: str) -> dict:
         "details": result,
     }
 
+def push_branch(branch_name: str) -> dict:
+    result = run_git_command(["push", "-u", "origin", branch_name])
+
+    return {
+        "success": result["success"],
+        "branch_name": branch_name,
+        "details": result,
+    }
+
 
 def create_branch_and_commit(
     ticket_id: str,

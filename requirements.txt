@@ -4,3 +4,4 @@ pydantic
 jinja2
 python-dotenv
 pytest
+requests
