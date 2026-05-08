@@ -1,23 +1,20 @@
 # Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+
+# Pytest cache
+.pytest_cache/
 
 # Virtual environments
 .venv/
 .venv-airflow/
 venv/
 
-# Python test/cache files
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
 # Environment files
 .env
 
-# OS/editor files
+# OS/editor
 .DS_Store
 .vscode/
 .idea/
