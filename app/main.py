@@ -8,6 +8,9 @@ from app.validator import run_all_validations
 from app.git_service import create_branch_and_commit, push_branch
 from app.github_service import create_pull_request
 from app.jira_service import add_jira_comment, build_dag_ops_comment
+from app.config import settings
+from app.bedrock_planner import bedrock_plan_ticket, convert_bedrock_plan_to_parsed_request
+
 
 app = FastAPI(title="AI DAG Ops Assistant")
 
@@ -82,7 +85,19 @@ async def handle_jira_webhook(request: Request):
             "classification": classification,
         }
 
-    parsed_request = parse_ticket(ticket)
+    bedrock_planner_result = None
+
+    if settings.use_bedrock_planner:
+      bedrock_planner_result = bedrock_plan_ticket(ticket)
+
+      if bedrock_planner_result["success"]:
+               parsed_request = convert_bedrock_plan_to_parsed_request(
+                  bedrock_planner_result["plan"]
+              )
+      else:
+           parsed_request = parse_ticket(ticket)
+    else:
+        parsed_request = parse_ticket(ticket)
 
     if parsed_request.missing_fields:
         return {
@@ -90,9 +105,10 @@ async def handle_jira_webhook(request: Request):
             "message": "Ticket is DAG related but missing required information",
             "classification": classification,
             "parsed_request": parsed_request,
+            "bedrock_planner": bedrock_planner_result,
             "needs_clarification": True,
             "human_review_required": True,
-        }
+   }
 
     if classification.operation != "CREATE_DAG":
         return {
@@ -157,6 +173,7 @@ async def handle_jira_webhook(request: Request):
     "ticket_id": ticket.ticket_id,
     "classification": classification,
     "parsed_request": parsed_request,
+    "bedrock_planner": bedrock_planner_result,
     "generated": generated,
     "validation": validation,
     "git": git_result,
