@@ -126,12 +126,42 @@ def commit_files(commit_message: str) -> dict:
     }
 
 def push_branch(branch_name: str) -> dict:
-    result = run_git_command(["push", "-u", "origin", branch_name])
+    if not settings.github_token:
+        return {
+            "success": False,
+            "branch_name": branch_name,
+            "message": "Missing GITHUB_TOKEN in .env",
+        }
+
+    if not settings.github_owner or not settings.github_repo:
+        return {
+            "success": False,
+            "branch_name": branch_name,
+            "message": "Missing GITHUB_OWNER or GITHUB_REPO in .env",
+        }
+
+    remote_url = (
+        f"https://x-access-token:{settings.github_token}"
+        f"@github.com/{settings.github_owner}/{settings.github_repo}.git"
+    )
+
+    result = run_git_command(["push", "-u", remote_url, branch_name])
+
+    stderr = result.get("stderr", "")
+    stdout = result.get("stdout", "")
+
+    if settings.github_token:
+        stderr = stderr.replace(settings.github_token, "***TOKEN_REDACTED***")
+        stdout = stdout.replace(settings.github_token, "***TOKEN_REDACTED***")
 
     return {
         "success": result["success"],
         "branch_name": branch_name,
-        "details": result,
+        "details": {
+            "success": result["success"],
+            "stdout": stdout,
+            "stderr": stderr,
+        },
     }
 
 
