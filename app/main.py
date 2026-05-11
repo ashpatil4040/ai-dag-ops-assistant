@@ -7,7 +7,7 @@ from app.dag_generator import generate_dag
 from app.validator import run_all_validations
 from app.git_service import create_branch_and_commit, push_branch
 from app.github_service import create_pull_request
-
+from app.jira_service import add_jira_comment, build_dag_ops_comment
 
 app = FastAPI(title="AI DAG Ops Assistant")
 
@@ -138,13 +138,29 @@ async def handle_jira_webhook(request: Request):
                     validation=validation,
                 )
 
+    jira_comment_result = None
+
+    comment_text = build_dag_ops_comment(
+    ticket_id=ticket.ticket_id,
+    generated=generated,
+    validation=validation,
+    git_result=git_result,
+    github_pr_result=github_pr_result,
+)
+
+    jira_comment_result = add_jira_comment(
+    ticket_id=ticket.ticket_id,
+    comment_text=comment_text,
+)
+
     return {
-        "ticket_id": ticket.ticket_id,
-        "classification": classification,
-        "parsed_request": parsed_request,
-        "generated": generated,
-        "validation": validation,
-        "git": git_result,
-        "github_pull_request": github_pr_result,
-        "human_review_required": True,
-    }
+    "ticket_id": ticket.ticket_id,
+    "classification": classification,
+    "parsed_request": parsed_request,
+    "generated": generated,
+    "validation": validation,
+    "git": git_result,
+    "github_pull_request": github_pr_result,
+    "jira_comment": jira_comment_result,
+    "human_review_required": True,
+}
