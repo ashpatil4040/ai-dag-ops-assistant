@@ -60,25 +60,48 @@ Description: {ticket.description}
 """.strip()
 
 
-def invoke_claude_json(prompt: str) -> dict[str, Any]:
+def invoke_bedrock_json(prompt: str) -> dict[str, Any]:
     client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
 
-    body = {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 1200,
-        "temperature": 0,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    }
-                ],
-            }
-        ],
-    }
+    print("Using Bedrock model/profile:", settings.bedrock_model_id)
+    print("Using AWS region:", settings.aws_region)
+    print("Using Bedrock provider:", settings.bedrock_provider)
+
+    if settings.bedrock_provider == "nova":
+        body = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "text": prompt
+                        }
+                    ],
+                }
+            ],
+            "inferenceConfig": {
+                "max_new_tokens": 1200,
+                "temperature": 0,
+            },
+        }
+
+    else:
+        body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1200,
+            "temperature": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        }
+                    ],
+                }
+            ],
+        }
 
     response = client.invoke_model(
         modelId=settings.bedrock_model_id,
@@ -89,16 +112,18 @@ def invoke_claude_json(prompt: str) -> dict[str, Any]:
 
     response_body = json.loads(response["body"].read())
 
-    text = response_body["content"][0]["text"]
+    if settings.bedrock_provider == "nova":
+        text = response_body["output"]["message"]["content"][0]["text"]
+    else:
+        text = response_body["content"][0]["text"]
 
     return json.loads(text)
-
 
 def bedrock_plan_ticket(ticket: JiraTicket) -> dict[str, Any]:
     prompt = build_planner_prompt(ticket)
 
     try:
-        plan = invoke_claude_json(prompt)
+        plan = invoke_bedrock_json(prompt)
         return {
             "success": True,
             "planner": "bedrock",

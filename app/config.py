@@ -19,8 +19,9 @@ class Settings:
     aws_region: str = os.getenv("AWS_REGION", "us-east-1")
     bedrock_model_id: str = os.getenv(
     "BEDROCK_MODEL_ID",
-    "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    "us.amazon.nova-micro-v1:0",
     )
+    bedrock_provider: str = os.getenv("BEDROCK_PROVIDER", "nova")
     use_bedrock_planner: bool = os.getenv("USE_BEDROCK_PLANNER", "false").lower() == "true"
 
 settings = Settings()
