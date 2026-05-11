@@ -15,15 +15,15 @@ def classify_ticket(ticket: JiraTicket) -> TicketClassification:
             risk_level="LOW",
         )
 
-    if "create" in text or "new dag" in text:
-        operation = "CREATE_DAG"
-        risk_level = "MEDIUM"
+    if "disable" in text or "pause" in text:
+        operation = "DISABLE_DAG"
+        risk_level = "HIGH"
     elif "modify" in text or "update" in text or "change" in text:
         operation = "MODIFY_DAG"
         risk_level = "HIGH"
-    elif "disable" in text or "pause" in text:
-        operation = "DISABLE_DAG"
-        risk_level = "HIGH"
+    elif "create" in text or "new dag" in text:
+        operation = "CREATE_DAG"
+        risk_level = "MEDIUM"
     elif "validate" in text or "check" in text:
         operation = "VALIDATE_DAG"
         risk_level = "LOW"

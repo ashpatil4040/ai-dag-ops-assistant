@@ -1,7 +1,6 @@
 from pathlib import Path
-
+import re
 from jinja2 import Environment, FileSystemLoader
-
 from app.models import ParsedDagRequest
 
 
@@ -50,4 +49,79 @@ def generate_dag(parsed_request: ParsedDagRequest) -> dict:
         "schedule": parsed_request.schedule,
         "dag_file_path": str(dag_file),
         "test_file_path": str(test_file),
+    }
+
+def find_existing_dag_file(dag_id: str) -> Path | None:
+    possible_file = OUTPUT_DAG_DIR / f"{dag_id}_dag.py"
+
+    if possible_file.exists():
+        return possible_file
+
+    for file in OUTPUT_DAG_DIR.glob("*_dag.py"):
+        content = file.read_text()
+        if f'dag_id="{dag_id}"' in content or f"dag_id='{dag_id}'" in content:
+            return file
+
+    return None
+
+
+def modify_existing_dag(parsed_request: ParsedDagRequest) -> dict:
+    OUTPUT_DAG_DIR.mkdir(exist_ok=True)
+    OUTPUT_TEST_DIR.mkdir(exist_ok=True)
+
+    dag_file = find_existing_dag_file(parsed_request.dag_id)
+
+    if not dag_file:
+        return {
+            "success": False,
+            "message": f"Existing DAG file not found for dag_id: {parsed_request.dag_id}",
+            "dag_id": parsed_request.dag_id,
+        }
+
+    code = dag_file.read_text()
+
+    if parsed_request.schedule:
+        code = re.sub(
+            r'schedule="[^"]+"',
+            f'schedule="{parsed_request.schedule}"',
+            code,
+        )
+
+    if parsed_request.retries is not None:
+        code = re.sub(
+            r'"retries":\s*\d+',
+            f'"retries": {parsed_request.retries}',
+            code,
+        )
+
+    if parsed_request.retry_delay_minutes is not None:
+        code = re.sub(
+            r"retry_delay\":\s*timedelta\(minutes=\d+\)",
+            f'retry_delay": timedelta(minutes={parsed_request.retry_delay_minutes})',
+            code,
+        )
+
+    dag_file.write_text(code)
+
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+    test_template = env.get_template("basic_dag_test.py.j2")
+
+    rendered_test_code = test_template.render(
+        dag_id=parsed_request.dag_id,
+        schedule=parsed_request.schedule,
+        retries=parsed_request.retries,
+    )
+
+    test_file = OUTPUT_TEST_DIR / f"test_{parsed_request.dag_id}_dag.py"
+    test_file.write_text(rendered_test_code)
+
+    return {
+        "success": True,
+        "dag_id": parsed_request.dag_id,
+        "source": parsed_request.source,
+        "target": parsed_request.target,
+        "schedule": parsed_request.schedule,
+        "dag_file_path": str(dag_file),
+        "test_file_path": str(test_file),
+        "change_type": "MODIFY_DAG",
     }

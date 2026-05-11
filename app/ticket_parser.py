@@ -14,6 +14,9 @@ def extract_dag_id(text: str, summary: str) -> str:
         r"dag named ([a-zA-Z0-9_]+)",
         r"dag name[:\s]+([a-zA-Z0-9_]+)",
         r"dag_id[:\s]+([a-zA-Z0-9_]+)",
+        r"dag ([a-zA-Z0-9_]+)",
+        r"update ([a-zA-Z0-9_]+) dag",
+        r"modify ([a-zA-Z0-9_]+) dag",
     ]
 
     for pattern in patterns:
@@ -72,6 +75,9 @@ def extract_schedule(text: str) -> str | None:
 
     if "weekly" in lower_text:
         return "0 0 * * 0"
+    
+    if "every 6 hours" in lower_text or "every six hours" in lower_text:
+        return "0 */6 * * *"
 
     cron_match = re.search(r"cron[:\s]+([0-9\*/,\-\s]+)", text, re.IGNORECASE)
     if cron_match:
@@ -100,6 +106,9 @@ def extract_retries(text: str) -> int:
         r"retries should be (\d+)",
         r"retries[:\s]+(\d+)",
         r"retry (\d+) times",
+        r"change retries to (\d+)",
+        r"set retries to (\d+)",
+        r"retries to (\d+)",
     ]
 
     for pattern in patterns:
@@ -115,6 +124,9 @@ def extract_retry_delay(text: str) -> int:
         r"retry delay should be (\d+) minutes",
         r"retry_delay[:\s]+(\d+)",
         r"retry delay[:\s]+(\d+)",
+        r"change retry delay to (\d+)",
+        r"set retry delay to (\d+)",
+        r"retry delay to (\d+)",
     ]
 
     for pattern in patterns:

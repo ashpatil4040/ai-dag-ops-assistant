@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from app.models import JiraTicket
 from app.classifier import classify_ticket
 from app.ticket_parser import parse_ticket
-from app.dag_generator import generate_dag
+from app.dag_generator import generate_dag, modify_existing_dag
 from app.validator import run_all_validations
 from app.git_service import create_branch_and_commit, push_branch
 from app.github_service import create_pull_request
@@ -110,16 +110,31 @@ async def handle_jira_webhook(request: Request):
             "human_review_required": True,
    }
 
-    if classification.operation != "CREATE_DAG":
+    if classification.operation == "CREATE_DAG":
+        generated = generate_dag(parsed_request)
+
+    elif classification.operation == "MODIFY_DAG":
+        generated = modify_existing_dag(parsed_request)
+
+        if not generated.get("success"):
+            return {
+                "ticket_id": ticket.ticket_id,
+                "message": generated.get("message"),
+                "classification": classification,
+                "parsed_request": parsed_request,
+                "bedrock_planner": bedrock_planner_result,
+                "human_review_required": True,
+            }
+
+    else:
         return {
             "ticket_id": ticket.ticket_id,
-            "message": "Only CREATE_DAG is supported right now",
+            "message": f"{classification.operation} is not supported yet",
             "classification": classification,
             "parsed_request": parsed_request,
+            "bedrock_planner": bedrock_planner_result,
             "human_review_required": True,
         }
-
-    generated = generate_dag(parsed_request)
 
     validation = run_all_validations(
         generated["dag_file_path"],
