@@ -1,4 +1,11 @@
 # =============================================================================
+# ARCHIVED: 2026-05-11
+# Ticket: DAG-107
+# Original archived to: generated_dags/archive/customer_orders_load_dag.py
+# This file should be removed after PR is approved and merged.
+# =============================================================================
+
+# =============================================================================
 # DEPRECATED: 2026-05-11
 # Ticket: DAG-105
 # This DAG has been deprecated and should not be re-enabled without approval.
