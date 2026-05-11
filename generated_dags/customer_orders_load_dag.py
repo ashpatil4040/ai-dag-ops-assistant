@@ -1,3 +1,9 @@
+# =============================================================================
+# DEPRECATED: 2026-05-11
+# Ticket: DAG-105
+# This DAG has been deprecated and should not be re-enabled without approval.
+# =============================================================================
+
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -42,7 +48,7 @@ with DAG(
     schedule=None,
     catchup=False,
     is_paused_upon_creation=True,
-    tags=['ai-generated', 'jira', 'dag-ops'],
+    tags=['ai-generated', 'jira', 'dag-ops', "deprecated"],
 ) as dag:
 
     start = EmptyOperator(task_id="start")
