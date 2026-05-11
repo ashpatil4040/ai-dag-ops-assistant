@@ -7,7 +7,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "data-platform",
-    "retries": 3,
+    "retries": 5,
     "retry_delay": timedelta(minutes=10),
 }
 
@@ -39,7 +39,7 @@ with DAG(
     dag_id="customer_audit_load",
     default_args=default_args,
     start_date=datetime(2026, 1, 1),
-    schedule="0 2 * * *",
+    schedule="0 */6 * * *",
     catchup=False,
     tags=['ai-generated', 'jira', 'dag-ops'],
 ) as dag:
