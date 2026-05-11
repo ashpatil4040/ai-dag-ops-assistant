@@ -1,3 +1,16 @@
+# =============================================================================
+# ARCHIVED: 2026-05-11
+# Ticket: DAG-107
+# Original archived to: generated_dags/archive/customer_orders_load_dag.py
+# This file should be removed after PR is approved and merged.
+# =============================================================================
+
+# =============================================================================
+# DEPRECATED: 2026-05-11
+# Ticket: DAG-105
+# This DAG has been deprecated and should not be re-enabled without approval.
+# =============================================================================
+
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -39,9 +52,10 @@ with DAG(
     dag_id="customer_orders_load",
     default_args=default_args,
     start_date=datetime(2026, 1, 1),
-    schedule="0 2 * * *",
+    schedule=None,
     catchup=False,
-    tags=['ai-generated', 'jira', 'dag-ops'],
+    is_paused_upon_creation=True,
+    tags=['ai-generated', 'jira', 'dag-ops', "deprecated"],
 ) as dag:
 
     start = EmptyOperator(task_id="start")
