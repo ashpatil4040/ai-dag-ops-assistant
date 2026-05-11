@@ -45,7 +45,7 @@ def test_expected_tasks_exist():
 
 def test_schedule_is_correct():
     module = load_dag_module()
-    assert str(module.dag.schedule_interval) == "0 2 * * *" or str(module.dag.timetable.summary) == "0 2 * * *"
+    assert str(module.dag.schedule_interval) == "0 */6 * * *" or str(module.dag.timetable.summary) == "0 */6 * * *"
     
 
 def test_catchup_is_false():
@@ -56,7 +56,7 @@ def test_catchup_is_false():
 def test_retries_are_configured():
     module = load_dag_module()
     retries = module.dag.default_args.get("retries")
-    assert retries == 3
+    assert retries == 5
 
 
 def test_task_dependency_order():
