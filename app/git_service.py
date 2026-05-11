@@ -1,7 +1,7 @@
 import re
 import subprocess
 from pathlib import Path
-
+from app.config import settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
