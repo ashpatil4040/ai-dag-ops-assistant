@@ -5,9 +5,11 @@ Separated from bedrock_planner.py (planning != code generation).
 import ast
 import json
 import re
+import time
 from typing import Any
 
 import boto3
+from botocore.config import Config
 
 from app.config import settings
 from app.models import ParsedDagRequest
@@ -144,22 +146,24 @@ Do NOT include any explanation or prose outside the code.
 # Bedrock invocation (code-gen specific — uses ai_code_gen_model_id and max_tokens)
 # ---------------------------------------------------------------------------
 
-def _invoke_bedrock_text(prompt: str) -> str:
+def _invoke_bedrock_text(prompt: str, max_tokens: int | None = None) -> str:
     """Invoke Bedrock and return raw text (not parsed JSON)."""
-    client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
+    # 90s read timeout — nova-pro can be slow but should never hang indefinitely.
+    boto_config = Config(connect_timeout=10, read_timeout=90)
+    client = boto3.client("bedrock-runtime", region_name=settings.aws_region, config=boto_config)
     model_id = settings.ai_code_gen_model_id
-    max_tokens = settings.ai_code_gen_max_tokens
+    tokens = max_tokens if max_tokens is not None else settings.ai_code_gen_max_tokens
     provider = settings.bedrock_provider
 
     if provider == "nova":
         body: dict[str, Any] = {
             "messages": [{"role": "user", "content": [{"text": prompt}]}],
-            "inferenceConfig": {"max_new_tokens": max_tokens, "temperature": 0},
+            "inferenceConfig": {"max_new_tokens": tokens, "temperature": 0},
         }
     else:
         body = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": max_tokens,
+            "max_tokens": tokens,
             "temperature": 0,
             "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         }
@@ -190,13 +194,15 @@ def _strip_markdown_fences(text: str) -> str:
 
 def generate_dag_code(parsed_request: ParsedDagRequest) -> str:
     prompt = build_code_gen_prompt(parsed_request)
-    raw = _invoke_bedrock_text(prompt)
+    # DAG code can be 150-300 lines — 2500 tokens is sufficient for nova-pro output.
+    raw = _invoke_bedrock_text(prompt, max_tokens=2500)
     return _strip_markdown_fences(raw)
 
 
 def generate_test_code(parsed_request: ParsedDagRequest, dag_code: str) -> str:
     prompt = build_code_gen_test_prompt(parsed_request, dag_code)
-    raw = _invoke_bedrock_text(prompt)
+    # Test files are smaller — 1500 tokens is enough and keeps response time reasonable.
+    raw = _invoke_bedrock_text(prompt, max_tokens=1500)
     return _strip_markdown_fences(raw)
 
 

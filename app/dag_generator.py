@@ -36,24 +36,33 @@ def generate_dag(parsed_request: ParsedDagRequest) -> dict:
                 "code_validation": code_validation,
             }
 
-        test_code = generate_test_code(parsed_request, dag_code)
-        test_validation = validate_generated_code_structure(test_code)
-
         dag_stem = parsed_request.dag_id if parsed_request.dag_id.endswith("_dag") else f"{parsed_request.dag_id}_dag"
         dag_file = OUTPUT_DAG_DIR / f"{dag_stem}.py"
         test_file = OUTPUT_TEST_DIR / f"test_{dag_stem}.py"
 
         dag_file.write_text(dag_code)
-        if test_validation["valid"]:
-            test_file.write_text(test_code)
+
+        # Test generation is best-effort — a slow/timeout from nova-pro should not
+        # fail the whole CREATE_DAG operation.
+        test_file_path = None
+        try:
+            test_code = generate_test_code(parsed_request, dag_code)
+            test_validation = validate_generated_code_structure(test_code)
+            if test_validation["valid"]:
+                test_file.write_text(test_code)
+                test_file_path = str(test_file)
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).warning("Test generation skipped: %s", exc)
 
         return {
+            "success": True,
             "dag_id": parsed_request.dag_id,
             "source": parsed_request.source,
             "target": parsed_request.target,
             "schedule": parsed_request.schedule,
             "dag_file_path": str(dag_file),
-            "test_file_path": str(test_file) if test_validation["valid"] else None,
+            "test_file_path": test_file_path,
             "change_type": "AI_GENERATED",
             "code_validation": code_validation,
             "ai_model": settings.ai_code_gen_model_id,

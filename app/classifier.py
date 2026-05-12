@@ -48,7 +48,30 @@ def classify_ticket(ticket: JiraTicket) -> TicketClassification:
             risk_level=RiskLevel.HIGH,
         )
 
-    if any(kw in text for kw in ["debug", "failure", "failed", "broken", "investigate", "why did", "error in dag"]):
+    # Primary action intents — checked BEFORE diagnostic keywords so that
+    # config terms like "on_failure_callback" or "retry" don't mis-trigger DEBUG.
+    if "create" in text or "new dag" in text:
+        return TicketClassification(
+            is_dag_related=True,
+            operation=OperationType.CREATE_DAG,
+            risk_level=RiskLevel.MEDIUM,
+        )
+
+    if any(kw in text for kw in ["modify", "update", "change"]):
+        return TicketClassification(
+            is_dag_related=True,
+            operation=OperationType.MODIFY_DAG,
+            risk_level=RiskLevel.HIGH,
+        )
+
+    # Diagnostic intents — use specific multi-word phrases for "failure"/"failed"
+    # to avoid false-positives from Airflow config params like on_failure_callback.
+    _debug_keywords = [
+        "debug", "broken", "investigate", "why did", "error in dag",
+        "dag failure", "dag failed", "task failure", "task failed",
+        "run failed", "run failure", "pipeline failed", "pipeline failure",
+    ]
+    if any(kw in text for kw in _debug_keywords):
         return TicketClassification(
             is_dag_related=True,
             operation=OperationType.DEBUG_DAG_FAILURE,
@@ -60,20 +83,6 @@ def classify_ticket(ticket: JiraTicket) -> TicketClassification:
             is_dag_related=True,
             operation=OperationType.READ_DAG,
             risk_level=RiskLevel.LOW,
-        )
-
-    if any(kw in text for kw in ["modify", "update", "change"]):
-        return TicketClassification(
-            is_dag_related=True,
-            operation=OperationType.MODIFY_DAG,
-            risk_level=RiskLevel.HIGH,
-        )
-
-    if "create" in text or "new dag" in text:
-        return TicketClassification(
-            is_dag_related=True,
-            operation=OperationType.CREATE_DAG,
-            risk_level=RiskLevel.MEDIUM,
         )
 
     if any(kw in text for kw in ["validate", "check"]):
