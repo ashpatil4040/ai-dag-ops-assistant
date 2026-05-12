@@ -136,7 +136,11 @@ def push_branch(branch_name: str) -> dict:
         f"@github.com/{settings.github_owner}/{settings.github_repo}.git"
     )
 
-    result = run_git_command(["push", "-u", remote_url, branch_name])
+    # --force is safe here: feature branches are exclusively bot-managed, named after
+    # the ticket ID (e.g. feature/dagops-20-...), so no other user will push to them.
+    # --force-with-lease fails with "stale info" when the remote tracking ref is absent
+    # or out-of-date (common after git checkout -B resets the branch from main).
+    result = run_git_command(["push", "-u", "--force", remote_url, branch_name])
 
     stderr = result.get("stderr", "")
     stdout = result.get("stdout", "")

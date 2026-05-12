@@ -46,7 +46,15 @@ ENTERPRISE AIRFLOW DAG STANDARDS (must be applied to every DAG):
 
 9. No hardcoded secrets: No passwords, tokens, access keys or private keys in source code.
 
-10. Retry policy: Set retries and retry_delay in default_args.
+10. Retry policy: Always include 'owner', 'retries', and 'retry_delay' in default_args. Example:
+    default_args = {
+        'owner': '<owner_value>',
+        'retries': 3,
+        'retry_delay': timedelta(minutes=10),
+    }
+
+11. on_failure_callback wiring: Always pass on_failure_callback=on_failure_callback as a
+    keyword argument in the DAG() constructor — not just define the function.
 """
 
 _OPERATOR_GUIDE = """
