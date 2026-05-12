@@ -220,17 +220,25 @@ async def handle_jira_webhook(request: Request):
         bedrock_planner_result = bedrock_plan_ticket(ticket)
         if bedrock_planner_result["success"]:
             parsed_request = convert_bedrock_plan_to_parsed_request(bedrock_planner_result["plan"])
-            # Override classifier's operation with Bedrock's more context-aware detection.
+            # Override classifier's operation and risk_level with Bedrock's more context-aware detection.
             # Exception: DELETE→DEPRECATE safety redirect from classifier is always preserved.
             bedrock_op_str = bedrock_planner_result["plan"].get("operation", "")
+            bedrock_risk_str = bedrock_planner_result["plan"].get("risk_level", "")
             is_delete_redirect = classification.safety_warning and "DELETE_DAG" in classification.safety_warning
+            updates = {}
             if bedrock_op_str and not is_delete_redirect:
                 try:
-                    classification = classification.model_copy(
-                        update={"operation": OperationType(bedrock_op_str)}
-                    )
+                    updates["operation"] = OperationType(bedrock_op_str)
                 except ValueError:
-                    pass  # unknown op from Bedrock — keep classifier result
+                    pass
+            if bedrock_risk_str and not is_delete_redirect:
+                try:
+                    from app.models import RiskLevel
+                    updates["risk_level"] = RiskLevel(bedrock_risk_str)
+                except ValueError:
+                    pass
+            if updates:
+                classification = classification.model_copy(update=updates)
         else:
             parsed_request = parse_ticket(ticket)
     else:

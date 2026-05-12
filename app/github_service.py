@@ -197,6 +197,10 @@ def create_pull_request(
         "X-GitHub-Api-Version": "2022-11-28",
     }
 
+    # Destructive and AI-generated PRs are always draft — require human review before merge
+    _DRAFT_OPERATIONS = {"DEPRECATE_DAG", "DISABLE_DAG", "ARCHIVE_DAG"}
+    is_draft = ai_generated or operation in _DRAFT_OPERATIONS
+
     payload = {
         "title": build_pr_title(ticket_id, dag_id, operation=operation, ai_generated=ai_generated),
         "head": branch_name,
@@ -214,7 +218,7 @@ def create_pull_request(
             ai_generated=ai_generated,
             ai_model=ai_model,
         ),
-        "draft": ai_generated,  # AI-generated PRs are always draft
+        "draft": is_draft,
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -230,7 +234,7 @@ def create_pull_request(
             "pr_number": pr_number,
             "pr_url": data.get("html_url"),
             "title": data.get("title"),
-            "draft": ai_generated,
+            "draft": is_draft,
         }
 
     # 422: PR already exists for this branch — look it up and return it
