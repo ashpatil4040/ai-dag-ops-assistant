@@ -24,4 +24,9 @@ class Settings:
     bedrock_provider: str = os.getenv("BEDROCK_PROVIDER", "nova")
     use_bedrock_planner: bool = os.getenv("USE_BEDROCK_PLANNER", "false").lower() == "true"
 
+    # AI Code Generator
+    use_ai_code_generator: bool = os.getenv("USE_AI_CODE_GENERATOR", "false").lower() == "true"
+    ai_code_gen_model_id: str = os.getenv("AI_CODE_GEN_MODEL_ID", "us.amazon.nova-pro-v1:0")
+    ai_code_gen_max_tokens: int = int(os.getenv("AI_CODE_GEN_MAX_TOKENS", "4000"))
+
 settings = Settings()

@@ -179,6 +179,11 @@ def create_branch_and_commit(
             "repo_check": repo_check,
         }
 
+    # Always start from the base branch so uncommitted app-code changes
+    # (which live on main) don't bleed into the feature branch.
+    base = settings.github_base_branch or "main"
+    run_git_command(["checkout", base])
+
     branch_name = build_branch_name(ticket_id, dag_id)
 
     branch_result = create_or_checkout_branch(branch_name)

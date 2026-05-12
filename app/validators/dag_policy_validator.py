@@ -18,17 +18,17 @@ def validate_dag_policy(file_path: str) -> dict:
     warnings = []
 
     required_patterns = {
-        "dag_id": "dag_id=",
-        "owner": '"owner"',
-        "retries": '"retries"',
-        "retry_delay": '"retry_delay"',
-        "start_date": "start_date=",
-        "schedule": "schedule=",
-        "catchup": "catchup=",
+        "dag_id": ["dag_id="],
+        "owner": ['"owner"', "owner="],
+        "retries": ['"retries"', "retries="],
+        "retry_delay": ['"retry_delay"', "retry_delay="],
+        "start_date": ["start_date="],
+        "schedule": ["schedule="],
+        "catchup": ["catchup="],
     }
 
-    for field, pattern in required_patterns.items():
-        if pattern not in code:
+    for field, patterns in required_patterns.items():
+        if not any(p in code for p in patterns):
             errors.append(f"Missing required DAG field: {field}")
 
     if "catchup=False" not in code.replace(" ", ""):

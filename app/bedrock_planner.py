@@ -5,7 +5,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import settings
-from app.models import JiraTicket, ParsedDagRequest
+from app.models import JiraTicket, OperationType, ParsedDagRequest
 
 
 def build_planner_prompt(ticket: JiraTicket) -> str:
@@ -17,11 +17,15 @@ Do not include markdown.
 Do not include explanations outside JSON.
 
 Allowed operations:
-- CREATE_DAG
-- MODIFY_DAG
-- DISABLE_DAG
-- VALIDATE_DAG
-- UNKNOWN
+- CREATE_DAG (risk: MEDIUM)
+- READ_DAG (risk: LOW)
+- MODIFY_DAG (risk: HIGH)
+- VALIDATE_DAG (risk: LOW)
+- DISABLE_DAG (risk: HIGH)
+- DEPRECATE_DAG (risk: HIGH)
+- ARCHIVE_DAG (risk: CRITICAL)
+- DEBUG_DAG_FAILURE (risk: MEDIUM)
+- UNKNOWN (risk: MEDIUM)
 
 Rules:
 - If source, target, or schedule is missing, set needs_clarification=true.
@@ -34,8 +38,11 @@ Rules:
 - Default retries is 3.
 - Default retry_delay_minutes is 10.
 - Always require human review.
-- Risk is MEDIUM for create DAG.
-- Risk is HIGH for modify, disable, delete, production connection, target table, or schedule changes.
+- Risk is MEDIUM for CREATE_DAG.
+- Risk is HIGH for MODIFY_DAG, DISABLE_DAG, DEPRECATE_DAG.
+- Risk is CRITICAL for ARCHIVE_DAG.
+- Risk is LOW for READ_DAG and VALIDATE_DAG.
+- IMPORTANT: If the user mentions DELETE or removing a DAG, always return operation=DEPRECATE_DAG with risk_level=CRITICAL. Never return DELETE_DAG.
 
 Return JSON with this exact shape:
 {{
@@ -164,4 +171,7 @@ def convert_bedrock_plan_to_parsed_request(plan: dict[str, Any]) -> ParsedDagReq
         tags=["ai-generated", "jira", "dag-ops"],
         missing_fields=missing_fields,
         clarification_questions=clarification_questions,
+        pipeline_type=plan.get("pipeline_type"),
+        on_failure_email=plan.get("on_failure_email"),
+        sla_minutes=plan.get("sla_minutes"),
     )
