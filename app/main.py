@@ -221,17 +221,29 @@ async def handle_jira_webhook(request: Request):
         if bedrock_planner_result["success"]:
             parsed_request = convert_bedrock_plan_to_parsed_request(bedrock_planner_result["plan"])
             # Override classifier's operation and risk_level with Bedrock's more context-aware detection.
-            # Exception: DELETE→DEPRECATE safety redirect from classifier is always preserved.
+            # Exceptions (classifier wins, Bedrock cannot override):
+            #   1. DELETE→DEPRECATE safety redirect (safety-critical)
+            #   2. ARCHIVE_DAG — "archive" keyword is unambiguous; Bedrock can misread descriptions
+            #      that mention "deprecated for 90 days" when the actual intent is archival.
             bedrock_op_str = bedrock_planner_result["plan"].get("operation", "")
             bedrock_risk_str = bedrock_planner_result["plan"].get("risk_level", "")
             is_delete_redirect = classification.safety_warning and "DELETE_DAG" in classification.safety_warning
+            is_protected_op = classification.operation == OperationType.ARCHIVE_DAG
+            should_override = bedrock_op_str and not is_delete_redirect and not is_protected_op
             updates = {}
-            if bedrock_op_str and not is_delete_redirect:
+            if should_override:
                 try:
                     updates["operation"] = OperationType(bedrock_op_str)
                 except ValueError:
                     pass
-            if bedrock_risk_str and not is_delete_redirect:
+                if bedrock_risk_str:
+                    try:
+                        from app.models import RiskLevel
+                        updates["risk_level"] = RiskLevel(bedrock_risk_str)
+                    except ValueError:
+                        pass
+            elif not is_delete_redirect and not is_protected_op and bedrock_risk_str:
+                # Still allow Bedrock to upgrade risk_level even when op is protected
                 try:
                     from app.models import RiskLevel
                     updates["risk_level"] = RiskLevel(bedrock_risk_str)
