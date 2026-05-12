@@ -1,4 +1,11 @@
 # =============================================================================
+# ARCHIVED: 2026-05-11
+# Ticket: DAGOPS-19
+# Original archived to: generated_dags/archive/customer_invoice_load_dag.py
+# This file should be removed after PR is approved and merged.
+# =============================================================================
+
+# =============================================================================
 # DEPRECATED: 2026-05-11
 # Ticket: DAGOPS-19
 # This DAG has been deprecated and should not be re-enabled without approval.
