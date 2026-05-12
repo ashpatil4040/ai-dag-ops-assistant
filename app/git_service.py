@@ -61,22 +61,13 @@ def ensure_git_repo() -> dict:
 
 
 def create_or_checkout_branch(branch_name: str) -> dict:
-    existing_branch = run_git_command(["branch", "--list", branch_name])
-
-    if existing_branch["success"] and existing_branch["stdout"]:
-        checkout_result = run_git_command(["checkout", branch_name])
-        return {
-            "success": checkout_result["success"],
-            "action": "checked_out_existing_branch",
-            "branch_name": branch_name,
-            "details": checkout_result,
-        }
-
-    create_result = run_git_command(["checkout", "-b", branch_name])
+    # -B creates the branch if new, or resets it to current HEAD if it already exists.
+    # In both cases working-tree changes (e.g. the modified DAG file) are preserved.
+    create_result = run_git_command(["checkout", "-B", branch_name])
 
     return {
         "success": create_result["success"],
-        "action": "created_new_branch",
+        "action": "created_or_reset_branch",
         "branch_name": branch_name,
         "details": create_result,
     }
