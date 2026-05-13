@@ -39,8 +39,9 @@ with DAG(
     dag_id="customer_orders_load",
     default_args=default_args,
     start_date=datetime(2026, 1, 1),
-    schedule="0 2 * * *",
+    schedule=None,
     catchup=False,
+    is_paused_upon_creation=True,
     tags=['ai-generated', 'jira', 'dag-ops'],
 ) as dag:
 

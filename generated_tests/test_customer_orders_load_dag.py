@@ -45,7 +45,7 @@ def test_expected_tasks_exist():
 
 def test_schedule_is_correct():
     module = load_dag_module()
-    assert str(module.dag.schedule_interval) == "0 2 * * *" or str(module.dag.timetable.summary) == "0 2 * * *"
+    assert str(module.dag.schedule_interval) == "None" or str(module.dag.timetable.summary) == "None"
     
 
 def test_catchup_is_false():
